@@ -32,7 +32,7 @@ scores = model.predict(x_input)  # Realiza a predição
 print(f"Formato das previsões: {scores.shape}")
 
 # Obter a classe prevista
-prediction = np.argmax(scores)
+prediction = np.argmax(scores) #np argmax obtem classe com maior pontuação
 print('ClassId:', prediction)
 
 # Função para obter os rótulos das classes
@@ -41,7 +41,7 @@ def label_text(file):
     return list(r['SignName'])
 
 # Carregar os rótulos
-labels = label_text('/content/traffic-signs/label_names.csv')
+labels = label_text('label_names.csv')
 
 # Mostrar o rótulo previsto
 print('Label:', labels[prediction])

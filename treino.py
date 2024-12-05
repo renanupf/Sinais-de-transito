@@ -1,72 +1,59 @@
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
-import pickle
-import matplotlib.pyplot as plt
-from timeit import default_timer as timer
-
-from keras.utils import to_categorical
-from keras.models import Sequential
+import numpy as np  # Biblioteca para álgebra linear
+import pandas as pd  # Biblioteca para manipulação de dados
+import pickle  # Para manipulação de arquivos binários
+import matplotlib.pyplot as plt  # Para plotagem de gráficos
+from keras.utils import to_categorical  # Para transformar rótulos em formato categórico
+from keras.models import Sequential  # Para criar modelos sequenciais
 from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D, AvgPool2D, BatchNormalization, Reshape
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import LearningRateScheduler
+from tensorflow.keras.preprocessing.image import ImageDataGenerator  # Para gerar dados de imagem em tempo real
+from keras.callbacks import LearningRateScheduler  # Para ajustar a taxa de aprendizado
 
-# Input data files are available in the "../input/" directory.
-# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
-
-# Any results we write to the current directory are saved as output
-
-# Opening file for reading in binary mode
+# Carregando os dados de treino a partir de um arquivo binário
+#Parametro rb lê o arquivo no modo binario
 with open('/content/traffic-signs/data2.pickle', 'rb') as f:
-    data = pickle.load(f, encoding='latin1')  # dictionary type
+    data = pickle.load(f, encoding='latin1')  # Carrega o arquivo pickle
 
-# Preparing y_train and y_validation for using in Keras
-data['y_train'] = to_categorical(data['y_train'], num_classes=43)
-data['y_validation'] = to_categorical(data['y_validation'], num_classes=43)
+# Preparando os rótulos de treino e validação para serem usados no Keras´
+# Converte para formato categórico porque há 43 classes possiveis para cada imagem
+data['y_train'] = to_categorical(data['y_train'], num_classes=43)   
+data['y_validation'] = to_categorical(data['y_validation'], num_classes=43) #
 
-# Making channels come at the end
-data['x_train'] = data['x_train'].transpose(0, 2, 3, 1)
+# Alterando a ordem dos canais (para TensorFlow: canais no final)
+data['x_train'] = data['x_train'].transpose(0, 2, 3, 1) #Altera ordem dos canais com transpose
 data['x_validation'] = data['x_validation'].transpose(0, 2, 3, 1)
 data['x_test'] = data['x_test'].transpose(0, 2, 3, 1)
 
-# Showing loaded data from file
+# Mostrando informações sobre os dados carregados
 for i, j in data.items():
-    if i == 'labels':
+    if i == 'labels':               #laço que itera sobre o dataset para verificar e exibir suas dimensões
         print(i + ':', len(j))
     else:
         print(i + ':', j.shape)
 
-# x_train: (86989, 32, 32, 3)
-# y_train: (86989, 43)
-# x_test: (12630, 32, 32, 3)
-# y_test: (12630,)
-# x_validation: (4410, 32, 32, 3)
-# y_validation: (4410, 43)
-# labels: 43
+# Definindo tamanhos de filtros e inicializando os modelos
+filters = [3, 5, 9, 13, 15, 19, 23, 25, 31]  # Tamanhos de filtro
+model = [0] * len(filters)  # Inicializando a lista de modelos
 
-#Define quantia filtros e o tamanho do array de modelos 
-filters = [3, 5, 9, 13, 15, 19, 23, 25, 31]
-model = [0] * len(filters)
-
-#Cria modelos e define as camadas
+# Criando os modelos e adicionando camadas
 for i in range(len(model)):
     model[i] = Sequential()
     model[i].add(Conv2D(32, kernel_size=filters[i], padding='same', activation='relu', input_shape=(32, 32, 3)))
-    model[i].add(MaxPool2D(pool_size=2))
-    model[i].add(Flatten())
-    model[i].add(Dense(500, activation='relu'))
-    model[i].add(Dense(43, activation='softmax'))
-    model[i].compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model[i].add(MaxPool2D(pool_size=2))  # Camada de Pooling
+    model[i].add(Flatten())  # Achata as dimensões
+    model[i].add(Dense(500, activation='relu'))  # Camada totalmente conectada
+    model[i].add(Dense(43, activation='softmax'))  # Saída com 43 classes
+    model[i].compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])  # Compila o modelo
 
-#Escalonador de aprendizado
+# Definindo o escalonador de taxa de aprendizado
 annealer = LearningRateScheduler(lambda x: 1e-3 * 0.95 ** (x + epochs))
-epochs = 5
+epochs = 5  # Número de épocas
 
-#Salva os modelos treinados d vetor
-h = [0] * len(model)
+# Inicializando histórico dos modelos
+h = [0] * len(model) #cria uma lista de tamanho igual ao número de modelos no objeto
 
-#Treina os modelos
+# Treinando os modelos e armazena no h.
 for i in range(len(h)):
-    h[i] = model[i].fit(data['x_train'], data['y_train'],
-                        batch_size=5, epochs = epochs,
-                        validation_data = (data['x_validation'], data['y_validation']),
+    h[i] = model[i].fit(data['x_train'], data['y_train'],  #chama o metodo fit do modelo i   
+                        batch_size=5, epochs=epochs,
+                        validation_data=(data['x_validation'], data['y_validation']),
                         callbacks=[annealer], verbose=0)
